@@ -1,0 +1,106 @@
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  npm_config_cache: "$CI_PROJECT_DIR/.npm"
+  PW_IMAGE: "mcr.microsoft.com/playwright:v1.58.2-noble"
+
+cache:
+  key:
+    files:
+      - package-lock.json
+  paths:
+    - node_modules/
+    - .npm/
+
+build:
+  stage: build
+  image: "$PW_IMAGE"
+  tags:
+    - $RUNNER_TAG
+  script:
+    - npm ci
+  artifacts:
+    paths:
+      - node_modules/
+    expire_in: 1 hour
+
+test:all:
+  stage: test
+  image: "$PW_IMAGE"
+  tags:
+    - $RUNNER_TAG
+  needs: ["build"]
+  allow_failure: true
+  script:
+    - npx playwright test
+  artifacts:
+    when: always
+    paths:
+      - html-report/
+      - test-results/
+    reports:
+      junit: test-results/junit-*.xml
+    expire_in: 7 days
+  retry:
+    max: 1
+    when: script_failure
+
+test:smoke:
+  stage: test
+  image: "$PW_IMAGE"
+  tags:
+    - $RUNNER_TAG
+  needs: ["build"]
+  allow_failure: true
+  script:
+    - npx playwright test --project=smoke
+  artifacts:
+    when: always
+    paths:
+      - html-report/
+      - test-results/
+    expire_in: 7 days
+
+test:regression:
+  stage: test
+  image: "$PW_IMAGE"
+  tags:
+    - $RUNNER_TAG
+  needs: ["build"]
+  when: manual
+  allow_failure: true
+  script:
+    - npx playwright test
+  artifacts:
+    when: always
+    paths:
+      - html-report/
+      - test-results/
+    reports:
+      junit: test-results/junit-*.xml
+    expire_in: 7 days
+
+deploy:report:
+  stage: deploy
+  image: "$PW_IMAGE"
+  tags:
+    - $RUNNER_TAG
+  needs: ["test:all"]
+  script:
+    - mkdir -p public
+    - cp -r html-report/* public/
+  artifacts:
+    paths:
+      - public/
+    expire_in: 30 days
+  environment:
+    name: test-report
+    url: $CI_PAGES_URL

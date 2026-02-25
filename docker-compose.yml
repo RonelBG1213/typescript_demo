@@ -1,0 +1,22 @@
+services:
+  tests:
+    build: .
+    command: ["npx", "playwright", "test", "--grep", "@smoke"]
+    volumes:
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+    env_file:
+      - .env
+    environment:
+      - CI=true
+
+  tests-chromium:
+    build: .
+    command: ["npx", "playwright", "test", "--project=chromium"]
+    volumes:
+      - ./test-results:/app/test-results
+      - ./playwright-report:/app/playwright-report
+    env_file:
+      - .env
+    environment:
+      - CI=true

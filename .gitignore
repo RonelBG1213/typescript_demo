@@ -1,0 +1,6 @@
+node_modules/
+dist/
+test-results/
+html-report/
+playwright-report/
+.env
