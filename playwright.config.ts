@@ -11,6 +11,23 @@ export default defineConfig({
     ['list'],
     ['html'],
     ['junit', { outputFile: 'test-results/junit-report.xml' }],
+    ['playwright-qase-reporter',
+      {
+        mode: 'testops',
+        debug: true,
+        testops: {
+          api: {
+            token: process.env.QASE_TESTOPS_API_TOKEN,
+          },
+          project: process.env.QASE_TESTOPS_PROJECT || 'DEMO',
+          uploadAttachments: true,
+          run: {
+            id: process.env.QASE_TESTOPS_RUN_ID ? Number(process.env.QASE_TESTOPS_RUN_ID) : undefined,
+            complete: true,
+          },
+        },
+      },
+    ],
   ],
   use: {
     baseURL: process.env.BASE_URL || 'https://stratpoint.com/',
